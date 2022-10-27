@@ -1,31 +1,101 @@
 "use strict";
 exports.__esModule = true;
-exports.room = exports.item = exports.client = void 0;
-// import dgram from 'dgram';
+exports.adjacentRoom = exports.room = exports.enemy = exports.item = exports.client = void 0;
 var dgram = require("dgram");
 var server = dgram.createSocket('udp4');
-var clients = [];
 var client = /** @class */ (function () {
     function client() {
     }
-    client.prototype.setName = function (name) {
-        this.name = name;
-    };
     return client;
 }());
 exports.client = client;
 var item = /** @class */ (function () {
-    function item() {
+    function item(name, isKey, isSword, isEnemy, life) {
+        this.name = name;
+        this.isKey = isKey;
+        this.isSword = isSword;
+        this.isEnemy = isEnemy;
+        this.life = life;
     }
     return item;
 }());
 exports.item = item;
-var room = /** @class */ (function () {
-    function room() {
+var enemy = /** @class */ (function () {
+    function enemy(name, life) {
+        this.name = name;
+        this.life = life;
     }
+    return enemy;
+}());
+exports.enemy = enemy;
+var room = /** @class */ (function () {
+    function room(id, name, users, objects, isOpen, adjacentRooms, description) {
+        this.id = id;
+        this.name = name;
+        this.users = users;
+        this.objects = objects;
+        this.isOpen = isOpen;
+        this.adjacentRooms = adjacentRooms;
+        this.description = description;
+    }
+    room.prototype.examinar = function () {
+        return "Voce esta na sala: ".concat(this.name, ", a sala esta ").concat(this.roomIsOpen(), ", os itens presentes nela sao:").concat(this.getItems(), ", as salas adjacentes e suas posicoes sao:").concat(this.getSalas());
+    };
+    room.prototype.roomIsOpen = function () {
+        return this.isOpen ? "aberta" : "fechada";
+    };
+    room.prototype.getSalas = function () {
+        if (this.objects.length > 0) {
+            var salas_1 = "";
+            this.adjacentRooms.forEach(function (x) {
+                salas_1 = "".concat(salas_1, " | ").concat(x.name, " na posicao ").concat(x.position);
+            });
+            return salas_1;
+        }
+        else {
+            return "nenhum";
+        }
+    };
+    room.prototype.getItems = function () {
+        if (this.objects.length > 0) {
+            var items_1 = "";
+            console.log(this.objects);
+            this.objects.forEach(function (x) {
+                items_1 = "".concat(items_1, " | ").concat(x.name);
+            });
+            return items_1;
+        }
+        else {
+            return "nenhum";
+        }
+    };
     return room;
 }());
 exports.room = room;
+var adjacentRoom = /** @class */ (function () {
+    function adjacentRoom(id, position, name) {
+        this.id = id;
+        this.position = position;
+        this.name = name;
+    }
+    return adjacentRoom;
+}());
+exports.adjacentRoom = adjacentRoom;
+var clients = [];
+var key = new item("Chave mestre", true, false, false);
+var sword = new item("Espada potente", false, true, false);
+var dragon = new item("Dragao poderoso", false, false, true, 30);
+var nameRoom1 = 'Sala 1';
+var nameRoom2 = 'Sala 2';
+var nameRoom3 = 'Sala 3';
+var nameRoom4 = 'Sala 4';
+var nameRoom5 = 'Sala 5';
+var room1 = new room(1, nameRoom1, [], [key], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa");
+var room2 = new room(2, nameRoom2, [], [key], false, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2");
+var room3 = new room(3, nameRoom3, [], [key, sword], false, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3");
+var room4 = new room(4, nameRoom4, [], [key], false, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4");
+var room5 = new room(5, nameRoom5, [], [key, dragon], false, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5");
+var rooms = [room1, room2, room3, room4, room5];
 server.on('error', function (err) {
     console.log("server error:", err);
     server.close();
@@ -45,16 +115,70 @@ server.on('message', function (msg, rinfo) {
         console.log(clients);
     }
     var command = msg.toString().split(":")[0].toLowerCase();
-    console.log(msg);
     switch (command) {
         case "welcome":
             server.send("Bem vindo ao servidor!", rinfo.port);
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    rooms[0].users.push(x);
+                    x.actualRoom = rooms[0];
+                    x.actualRoomIndex = 0;
+                    server.send(rooms[0].examinar(), rinfo.port);
+                }
+            });
             break;
         case "examinar":
             server.send("Voce examinou a sala!", rinfo.port);
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    server.send(rooms[x.actualRoomIndex].examinar(), rinfo.port);
+                }
+            });
             break;
         case "mover":
-            server.send("Voce se moveu!", rinfo.port);
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    var avaiablePositions_1 = [];
+                    var movePosition_1 = msg.toString().split(":")[1].trim().toUpperCase();
+                    x.actualRoom.adjacentRooms.forEach(function (x) {
+                        avaiablePositions_1.push(x.position);
+                    });
+                    if (avaiablePositions_1.includes(movePosition_1)) {
+                        var destinationRoom_1 = 0;
+                        x.actualRoom.adjacentRooms.forEach(function (x) {
+                            if (movePosition_1 == x.position) {
+                                destinationRoom_1 = x.id;
+                            }
+                        });
+                        var destinationRoomIndex_1 = 0;
+                        rooms.map(function (item, index) {
+                            if (destinationRoom_1 == item.id) {
+                                destinationRoomIndex_1 = index;
+                            }
+                        });
+                        var userIndex_1 = 0;
+                        rooms[x.actualRoomIndex].users.map(function (item, index) {
+                            if (x.port == item.port && x.address == item.address) {
+                                userIndex_1 = index;
+                            }
+                        });
+                        if (rooms[destinationRoomIndex_1].isOpen) {
+                            rooms[x.actualRoomIndex].users.splice(userIndex_1, 1);
+                            x.actualRoom = rooms[destinationRoomIndex_1];
+                            x.actualRoomIndex = destinationRoomIndex_1;
+                            rooms[destinationRoomIndex_1].users.push(x);
+                            server.send("Voce se moveu para sala: ".concat(rooms[destinationRoomIndex_1].name), rinfo.port);
+                            server.send(rooms[destinationRoomIndex_1].examinar(), rinfo.port);
+                        }
+                        else {
+                            server.send('A porta dessa sala esta fechada, voce precisa abrir ela usando uma chave', rinfo.port);
+                        }
+                    }
+                    else {
+                        server.send("Voce tentou ir para uma posicao que nao eh valida, examine a sala para saber os caminhos", rinfo.port);
+                    }
+                }
+            });
             break;
         case "pegar":
             server.send("Voce pegou o objeto!", rinfo.port);
