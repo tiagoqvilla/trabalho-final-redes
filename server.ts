@@ -79,7 +79,6 @@ export class room {
   public getItems(): string {
     if (this.objects.length > 0) {
       let items = ""
-      console.log(this.objects);
       this.objects.forEach(x => {
         items = `${items} | ${x.name}`
       })
@@ -103,16 +102,16 @@ export class adjacentRoom {
 }
 
 var clients: client[] = [];
-var key = new item("Chave mestre", true, false, false);
-var sword = new item("Espada potente", false, true, false);
-var dragon = new item("Dragao poderoso", false, false, true, 30);
-var nameRoom1 = 'Sala 1';
-var nameRoom2 = 'Sala 2';
-var nameRoom3 = 'Sala 3';
-var nameRoom4 = 'Sala 4';
-var nameRoom5 = 'Sala 5';
+var key = new item("Chave", true, false, false);
+var sword = new item("Espada", false, true, false);
+var dragon = new item("Dragao", false, false, true, 30);
+var nameRoom1 = 'Sala1';
+var nameRoom2 = 'Sala2';
+var nameRoom3 = 'Sala3';
+var nameRoom4 = 'Sala4';
+var nameRoom5 = 'Sala5';
 
-var room1 = new room(1, nameRoom1, [], [key], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa")
+var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa")
 var room2 = new room(2, nameRoom2, [], [key], false, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2")
 var room3 = new room(3, nameRoom3, [], [key, sword], false, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3")
 var room4 = new room(4, nameRoom4, [], [key], false, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4")
@@ -135,7 +134,6 @@ server.on('message', (msg: string, rinfo: client) => {
     }
   } else {
     clients.push(rinfo);
-    console.log(clients)
   }
 
   var command = msg.toString().split(":")[0].toLowerCase();
@@ -208,9 +206,36 @@ server.on('message', (msg: string, rinfo: client) => {
       });
       break;
     case "pegar":
-      server.send("Voce pegou o objeto!", rinfo.port);
+      var objeto = msg.toString().split(":")[1].trim();
+      let objetoPego = null;
+      clients.forEach(x => {
+        if (x.port == rinfo.port && x.address == rinfo.address) {
+          rooms[x.actualRoomIndex].objects.map((obj, index) => {
+            if (obj.name == objeto && !obj.isEnemy) {
+              objetoPego = obj;
+              if (!x.inventario) {
+                x.inventario = [];
+              }
+              x.inventario.push(obj);
+              var restantes = [];
+              rooms[x.actualRoomIndex].objects.forEach(x => {
+                if (x.name != obj.name) {
+                  restantes.push(x);
+                }
+              })
+              rooms[x.actualRoomIndex].objects = restantes;
+              server.send(`Voce pegou o objeto: ${obj.name}!`, rinfo.port);
+            }
+          })
+        }
+      });
+      if (!objetoPego) {
+        server.send(`O item ${objeto} nao existe na sala!`, rinfo.port);
+      }
       break;
     case "largar":
+      var objeto = msg.toString().split(":")[1].trim();
+
       server.send("Voce largou o objeto!", rinfo.port);
       break;
     case "inventario":
