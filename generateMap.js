@@ -3,27 +3,70 @@ const Couleurs = require('couleurs')
 const Box = require('cli-box')
 const rooms = require('./rooms')
 
-const generateRoom = (rooms, currentPlayer) => {
-  Object.values(rooms).forEach((room) => {
-    let player = room.players.includes('player') ? 'X' : ''
-    let box = Box('10x2', player)
-    console.log(box)
-  })
+let generatedRooms = []
+const generateRooms = (rooms, currentPlayer) => {
+  for (const [key, value] of Object.entries(rooms)) {
+    let player = value.players.includes(currentPlayer) ? 'X' : ''
+    let box = Box({ w: 10, h: 2 }, player)
+    generatedRooms.push(box)
+  }
 }
 
-generateRoom(rooms, 'player')
+generateRooms(rooms, 'player')
 
-// Create two boxes
-// var box1 = Box('20x10', Couleurs('Hello World', [142, 68, 173])),
-//   box2 = Box('30x5', Couleurs('Hello Mars!', '#c0392b'))
-// // Combine them
-// console.log(
-//   Overlap({
-//     who: box1,
-//     with: box2,
-//     where: {
-//       x: 17,
-//       y: 2,
-//     },
-//   })
-// )
+let outerBox = Box({ w: 5, h: 20, fullscreen: true })
+
+// Sala 1
+let currentMap = Overlap({
+  who: outerBox,
+  with: generatedRooms[0],
+  where: {
+    x: 0,
+    y: 5,
+  },
+})
+
+// Sala 2
+currentMap = Overlap({
+  who: currentMap,
+  with: generatedRooms[1],
+  where: {
+    x: 10,
+    y: 5,
+  },
+})
+
+// Sala 3
+currentMap = Overlap({
+  who: currentMap,
+  with: generatedRooms[2],
+  where: {
+    x: 10,
+    y: 9,
+  },
+})
+
+// Sala 4
+currentMap = Overlap({
+  who: currentMap,
+  with: generatedRooms[3],
+  where: {
+    x: 10,
+    y: 1,
+  },
+})
+
+// Sala 5
+currentMap = Overlap({
+  who: currentMap,
+  with: generatedRooms[4],
+  where: {
+    x: 20,
+    y: 1,
+  },
+})
+
+const printMap = () => console.log(currentMap)
+printMap()
+
+module.exports = printMap
