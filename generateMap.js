@@ -14,14 +14,17 @@ const generateRooms = (rooms, currentPlayer) => {
 
 generateRooms(rooms, 'player')
 
-let outerBox = Box({ w: 5, h: 20, fullscreen: true })
+let outerBox = Box(
+  { w: 5, h: 20, fullscreen: true },
+  { text: 'Localização Atual do Jogador', vAlign: 'top', hAlign: 'right' }
+)
 
 // Sala 1
 let currentMap = Overlap({
   who: outerBox,
   with: generatedRooms[0],
   where: {
-    x: 0,
+    x: 50,
     y: 5,
   },
 })
@@ -31,7 +34,7 @@ currentMap = Overlap({
   who: currentMap,
   with: generatedRooms[1],
   where: {
-    x: 10,
+    x: 60,
     y: 5,
   },
 })
@@ -41,7 +44,7 @@ currentMap = Overlap({
   who: currentMap,
   with: generatedRooms[2],
   where: {
-    x: 10,
+    x: 60,
     y: 9,
   },
 })
@@ -51,7 +54,7 @@ currentMap = Overlap({
   who: currentMap,
   with: generatedRooms[3],
   where: {
-    x: 10,
+    x: 60,
     y: 1,
   },
 })
@@ -61,7 +64,7 @@ currentMap = Overlap({
   who: currentMap,
   with: generatedRooms[4],
   where: {
-    x: 20,
+    x: 70,
     y: 1,
   },
 })
