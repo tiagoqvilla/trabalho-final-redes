@@ -117,10 +117,10 @@ var nameRoom3 = 'Sala3';
 var nameRoom4 = 'Sala4';
 var nameRoom5 = 'Sala5';
 
-var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa")
+var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(3, "L", nameRoom3)], "sala poderosa")
 //deixar todas como false
 var room2 = new room(2, nameRoom2, [], [key], true, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2")
-var room3 = new room(3, nameRoom3, [], [key, sword], true, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3")
+var room3 = new room(3, nameRoom3, [], [key, sword], true, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1), new adjacentRoom(2, "S", nameRoom2)],"sala poderosa 3")
 var room4 = new room(4, nameRoom4, [], [key], true, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4")
 var room5 = new room(5, nameRoom5, [], [key, dragon], true, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5")
 var rooms = [room1, room2, room3, room4, room5];
@@ -190,7 +190,7 @@ const printMap = (rooms: room[], address: string, port: number) => {
     with: generatedRooms[1],
     where: {
       x: 60,
-      y: 5,
+      y: 9,
     },
   })
 
@@ -200,7 +200,7 @@ const printMap = (rooms: room[], address: string, port: number) => {
     with: generatedRooms[2],
     where: {
       x: 60,
-      y: 9,
+      y: 5,
     },
   })
 
