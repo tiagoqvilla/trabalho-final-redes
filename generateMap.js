@@ -4,6 +4,16 @@ const Box = require('cli-box')
 const rooms = require('./rooms')
 
 let generatedRooms = []
+let marksConfigs = {
+  nw: '╔',
+  n: '═',
+  ne: '╗',
+  e: '║',
+  se: '╝',
+  s: '═',
+  sw: '╚',
+  w: '║',
+}
 /**
  * Gera as salas para o mapa
  * @param {string} currentPlayer
@@ -11,7 +21,14 @@ let generatedRooms = []
 const generateRooms = (currentPlayer) => {
   for (const [key, value] of Object.entries(rooms)) {
     let player = value.players.includes(currentPlayer) ? 'X' : ''
-    let box = Box({ w: 10, h: 2 }, player)
+    let box = Box(
+      {
+        w: 10,
+        h: 2,
+        marks: marksConfigs,
+      },
+      Couleurs(player, '#c0392b')
+    )
     generatedRooms.push(box)
   }
 }
@@ -24,8 +41,17 @@ const printMap = (currentPlayer) => {
   generateRooms(currentPlayer)
 
   let outerBox = Box(
-    { w: 5, h: 20, fullscreen: true },
-    { text: 'Localização Atual do Jogador', vAlign: 'top', hAlign: 'right' }
+    {
+      w: 5,
+      h: 20,
+      fullscreen: true,
+      marks: marksConfigs,
+    },
+    {
+      text: Couleurs('Localização Atual do Jogador', [255, 255, 0]),
+      vAlign: 'top',
+      hAlign: 'right',
+    }
   )
 
   // Sala 1
@@ -79,5 +105,7 @@ const printMap = (currentPlayer) => {
   })
   console.log(currentMap)
 }
+
+printMap('player')
 
 module.exports = printMap
