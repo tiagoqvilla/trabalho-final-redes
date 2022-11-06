@@ -1,5 +1,9 @@
 const dgram = require("dgram");
 const server = dgram.createSocket('udp4');
+const Overlap = require('overlap')
+const Couleurs = require('couleurs')
+const Box = require('cli-box')
+
 export class client {
   public address: string;
   public family: string;
@@ -120,6 +124,107 @@ var room3 = new room(3, nameRoom3, [], [key, sword], true, [new adjacentRoom(4, 
 var room4 = new room(4, nameRoom4, [], [key], true, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4")
 var room5 = new room(5, nameRoom5, [], [key, dragon], true, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5")
 var rooms = [room1, room2, room3, room4, room5];
+
+let generatedRooms = []
+let marksConfigs = {
+  nw: '╔',
+  n: '═',
+  ne: '╗',
+  e: '║',
+  se: '╝',
+  s: '═',
+  sw: '╚',
+  w: '║',
+}
+
+const generateRooms = (rooms: room[], address: string, port: number) => {
+  rooms.forEach(room => {
+    let player = room.users.filter(x => x.port == port && x.address == address)[0] ? 'X' : '';
+    let box = Box(
+      {
+        w: 10,
+        h: 2,
+        marks: marksConfigs,
+      },
+      Couleurs(player, '#c0392b')
+    )
+    generatedRooms.push(box)
+  })
+}
+
+/**
+ * Printa o mapa contendo a posição atual do jogador
+ * @param {string} currentPlayer
+ */
+const printMap = (rooms: room[], address: string, port: number) => {
+  generatedRooms = [];
+  generateRooms(rooms, address, port)
+
+  let outerBox = Box(
+    {
+      w: 5,
+      h: 20,
+      fullscreen: true,
+      marks: marksConfigs,
+    },
+    {
+      text: Couleurs('Localização Atual do Jogador', [255, 255, 0]),
+      vAlign: 'top',
+      hAlign: 'right',
+    }
+  )
+
+  // Sala 1
+  let currentMap = Overlap({
+    who: outerBox,
+    with: generatedRooms[0],
+    where: {
+      x: 50,
+      y: 5,
+    },
+  })
+
+  // Sala 2
+  currentMap = Overlap({
+    who: currentMap,
+    with: generatedRooms[1],
+    where: {
+      x: 60,
+      y: 5,
+    },
+  })
+
+  // Sala 3
+  currentMap = Overlap({
+    who: currentMap,
+    with: generatedRooms[2],
+    where: {
+      x: 60,
+      y: 9,
+    },
+  })
+
+  // Sala 4
+  currentMap = Overlap({
+    who: currentMap,
+    with: generatedRooms[3],
+    where: {
+      x: 60,
+      y: 1,
+    },
+  })
+
+  // Sala 5
+  currentMap = Overlap({
+    who: currentMap,
+    with: generatedRooms[4],
+    where: {
+      x: 70,
+      y: 1,
+    },
+  })
+  server.send(currentMap, port);
+}
 
 server.on('error', (err) => {
   console.log(`server error:`, err);
@@ -302,6 +407,9 @@ server.on('message', (msg: string, rinfo: client) => {
         }
       })
 
+      break;
+    case "mapa": 
+      printMap(rooms, rinfo.address, rinfo.port);
       break;
     case "cochichar":
       server.send("Voce usou o cochichou");

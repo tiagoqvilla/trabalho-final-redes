@@ -14,7 +14,7 @@ stdin.addListener("data", function (d) {
 });
 
 client.on("message", function (message, remote) {
-    console.log(`${remote.address}:${remote.port} - ${message}`);
+    console.log(`${message}`);
 });
 
 client.send(message, 0, message.length, PORT, HOST, function (err, bytes) {
