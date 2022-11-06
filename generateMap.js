@@ -1,7 +1,6 @@
 const Overlap = require('overlap')
 const Couleurs = require('couleurs')
 const Box = require('cli-box')
-const rooms = require('./rooms')
 
 let generatedRooms = []
 let marksConfigs = {
@@ -18,7 +17,7 @@ let marksConfigs = {
  * Gera as salas para o mapa
  * @param {string} currentPlayer
  */
-const generateRooms = (currentPlayer) => {
+const generateRooms = (rooms, currentPlayer) => {
   for (const [key, value] of Object.entries(rooms)) {
     let player = value.players.includes(currentPlayer) ? 'X' : ''
     let box = Box(
@@ -37,8 +36,8 @@ const generateRooms = (currentPlayer) => {
  * Printa o mapa contendo a posição atual do jogador
  * @param {string} currentPlayer
  */
-const printMap = (currentPlayer) => {
-  generateRooms(currentPlayer)
+const printMap = (rooms, currentPlayer) => {
+  generateRooms(rooms, currentPlayer)
 
   let outerBox = Box(
     {
@@ -105,7 +104,5 @@ const printMap = (currentPlayer) => {
   })
   console.log(currentMap)
 }
-
-printMap('player')
 
 module.exports = printMap
