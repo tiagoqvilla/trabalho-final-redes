@@ -6,7 +6,7 @@ export class client {
   public port: number;
   public size: number;
   public name?: string;
-  public inventario?: any[];
+  public inventario?: item[];
   public actualRoom: room;
   public actualRoomIndex: number;
 }
@@ -17,13 +17,15 @@ export class item {
   public isSword: boolean;
   public isEnemy: boolean;
   public life?: number;
+  public description: string;
 
-  constructor(name: string, isKey: boolean, isSword: boolean, isEnemy: boolean, life?: number) {
+  constructor(name: string, isKey: boolean, isSword: boolean, isEnemy: boolean, description: string, life?: number) {
     this.name = name;
     this.isKey = isKey;
     this.isSword = isSword;
     this.isEnemy = isEnemy;
     this.life = life;
+    this.description = description;
   }
 }
 
@@ -102,9 +104,9 @@ export class adjacentRoom {
 }
 
 var clients: client[] = [];
-var key = new item("Chave", true, false, false);
-var sword = new item("Espada", false, true, false);
-var dragon = new item("Dragao", false, false, true, 30);
+var key = new item("Chave", true, false, false, "Chave: pode ser utilizada para abrir qualquer sala, basta digitar a posicao em que a porta da sala esta, por exemplo usar: chave L");
+var sword = new item("Espada", false, true, false, "Espada: pode ser utilizada para atacar seus inimigos");
+var dragon = new item("Dragao", false, false, true, "Dragao: ele eh seu inimigo", 30);
 var nameRoom1 = 'Sala1';
 var nameRoom2 = 'Sala2';
 var nameRoom3 = 'Sala3';
@@ -112,10 +114,11 @@ var nameRoom4 = 'Sala4';
 var nameRoom5 = 'Sala5';
 
 var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa")
-var room2 = new room(2, nameRoom2, [], [key], false, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2")
-var room3 = new room(3, nameRoom3, [], [key, sword], false, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3")
-var room4 = new room(4, nameRoom4, [], [key], false, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4")
-var room5 = new room(5, nameRoom5, [], [key, dragon], false, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5")
+//deixar todas como false
+var room2 = new room(2, nameRoom2, [], [key], true, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2")
+var room3 = new room(3, nameRoom3, [], [key, sword], true, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3")
+var room4 = new room(4, nameRoom4, [], [key], true, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4")
+var room5 = new room(5, nameRoom5, [], [key, dragon], true, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5")
 var rooms = [room1, room2, room3, room4, room5];
 
 server.on('error', (err) => {
@@ -198,7 +201,6 @@ server.on('message', (msg: string, rinfo: client) => {
             } else {
               server.send('A porta dessa sala esta fechada, voce precisa abrir ela usando uma chave', rinfo.port);
             }
-
           } else {
             server.send("Voce tentou ir para uma posicao que nao eh valida, examine a sala para saber os caminhos", rinfo.port);
           }
@@ -216,15 +218,19 @@ server.on('message', (msg: string, rinfo: client) => {
               if (!x.inventario) {
                 x.inventario = [];
               }
-              x.inventario.push(obj);
-              var restantes = [];
-              rooms[x.actualRoomIndex].objects.forEach(x => {
-                if (x.name != obj.name) {
-                  restantes.push(x);
-                }
-              })
-              rooms[x.actualRoomIndex].objects = restantes;
-              server.send(`Voce pegou o objeto: ${obj.name}!`, rinfo.port);
+              if (x.inventario.filter(item => item.name == objetoPego.name)[0]) {
+                server.send(`Voce ja tem o item ${objetoPego.name} no seu inventario`, rinfo.port);
+              } else {
+                x.inventario.push(obj);
+                var restantes = [];
+                rooms[x.actualRoomIndex].objects.forEach(x => {
+                  if (x.name != obj.name) {
+                    restantes.push(x);
+                  }
+                })
+                rooms[x.actualRoomIndex].objects = restantes;
+                server.send(`Voce pegou o objeto: ${obj.name}!`, rinfo.port);
+              }
             }
           })
         }
@@ -235,21 +241,67 @@ server.on('message', (msg: string, rinfo: client) => {
       break;
     case "largar":
       var objeto = msg.toString().split(":")[1].trim();
-
-      server.send("Voce largou o objeto!", rinfo.port);
+      clients.forEach(x => {
+        if (x.port == rinfo.port && x.address == rinfo.address) {
+          if (x.inventario) {
+            if (x.inventario.filter(x => x.name == objeto)[0]) {
+              if (rooms[x.actualRoomIndex].objects.filter(obj => obj.name == objeto)[0]) {
+                server.send(`Voce nao pode largar o item ${objeto} aqui pois ja existe esse item nessa sala!`, rinfo.port);
+              } else {
+                const itensRestantesInventario = [];
+                x.inventario.forEach(inv => {
+                  console.log(inv);
+                  if (inv.name != objeto) {
+                    itensRestantesInventario.push(inv);
+                  } else {
+                    server.send(`Voce largou o item: ${inv.name}`, rinfo.port);
+                    rooms[x.actualRoomIndex].objects.push(inv);
+                  }
+                });
+                x.inventario = itensRestantesInventario;
+              }
+            } else {
+              server.send(`Voce nao tem o item: ${objeto} no seu invetario para largar`, rinfo.port);
+            }
+          } else {
+            server.send(`Voce nao tem o item: ${objeto} no seu invetario para largar`, rinfo.port);
+          }
+        }
+      });
       break;
     case "inventario":
-      server.send("Itens do seu inventario:", rinfo.port);
+      let itemsInventario = "Itens no seu inventario:";
+      clients.forEach(x => {
+        if (x.port == rinfo.port && x.address == rinfo.address) {
+          if (x.inventario) {
+            x.inventario.forEach(item => {
+              itemsInventario = `${itemsInventario} ${item.name} |`;
+            })
+            if (!x.inventario.length) {
+              itemsInventario = "Voce nao tem nenhum item no inventario!";
+            }
+          } else {
+            itemsInventario = "Voce nao tem nenhum item no inventario!";
+          } 
+        }
+      });
+      server.send(itemsInventario, rinfo.port);
       break;
     case "usar":
       server.send("Voce usou o objeto");
       break;
     case "falar":
       var message = msg.toString().split(":")[1];
+      clients.forEach(x => {
+        if (x.port == rinfo.port && x.address == rinfo.address) {
+          if (rooms[x.actualRoomIndex].users) {
+            rooms[x.actualRoomIndex].users.forEach(current => {
+              server.send(message, 0, message.length, current.port, current.address);
+            })
+          }
+        }
+      })
 
-      clients.forEach(function (current) {
-        server.send(message, 0, message.length, current.port, current.address);
-      });
       break;
     case "cochichar":
       server.send("Voce usou o cochichou");

@@ -10,12 +10,13 @@ var client = /** @class */ (function () {
 }());
 exports.client = client;
 var item = /** @class */ (function () {
-    function item(name, isKey, isSword, isEnemy, life) {
+    function item(name, isKey, isSword, isEnemy, description, life) {
         this.name = name;
         this.isKey = isKey;
         this.isSword = isSword;
         this.isEnemy = isEnemy;
         this.life = life;
+        this.description = description;
     }
     return item;
 }());
@@ -81,19 +82,20 @@ var adjacentRoom = /** @class */ (function () {
 }());
 exports.adjacentRoom = adjacentRoom;
 var clients = [];
-var key = new item("Chave", true, false, false);
-var sword = new item("Espada", false, true, false);
-var dragon = new item("Dragao", false, false, true, 30);
+var key = new item("Chave", true, false, false, "Chave: pode ser utilizada para abrir qualquer sala, basta digitar a posicao em que a porta da sala esta, por exemplo usar: chave L");
+var sword = new item("Espada", false, true, false, "Espada: pode ser utilizada para atacar seus inimigos");
+var dragon = new item("Dragao", false, false, true, "Dragao: ele eh seu inimigo", 30);
 var nameRoom1 = 'Sala1';
 var nameRoom2 = 'Sala2';
 var nameRoom3 = 'Sala3';
 var nameRoom4 = 'Sala4';
 var nameRoom5 = 'Sala5';
 var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa");
-var room2 = new room(2, nameRoom2, [], [key], false, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2");
-var room3 = new room(3, nameRoom3, [], [key, sword], false, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3");
-var room4 = new room(4, nameRoom4, [], [key], false, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4");
-var room5 = new room(5, nameRoom5, [], [key, dragon], false, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5");
+//deixar todas como false
+var room2 = new room(2, nameRoom2, [], [key], true, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2");
+var room3 = new room(3, nameRoom3, [], [key, sword], true, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3");
+var room4 = new room(4, nameRoom4, [], [key], true, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4");
+var room5 = new room(5, nameRoom5, [], [key, dragon], true, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5");
 var rooms = [room1, room2, room3, room4, room5];
 server.on('error', function (err) {
     console.log("server error:", err);
@@ -189,20 +191,20 @@ server.on('message', function (msg, rinfo) {
                             if (!x.inventario) {
                                 x.inventario = [];
                             }
-                            x.inventario.push(obj);
-                            var restantes = [];
-                            rooms[x.actualRoomIndex].objects.forEach(function (x) {
-                                if (x.name != obj.name) {
-                                    restantes.push(x);
-                                }
-                            });
-                            rooms[x.actualRoomIndex].objects = restantes;
-                            // if (rooms[x.actualRoomIndex].objects.length == 1) {
-                            //   rooms[x.actualRoomIndex].objects = [];
-                            // } else {
-                            //   rooms[x.actualRoomIndex].objects.slice(index, 1);
-                            // }
-                            server.send("Voce pegou o objeto: ".concat(obj.name, "!"), rinfo.port);
+                            if (x.inventario.filter(function (item) { return item.name == objetoPego_1.name; })[0]) {
+                                server.send("Voce ja tem o item ".concat(objetoPego_1.name, " no seu inventario"), rinfo.port);
+                            }
+                            else {
+                                x.inventario.push(obj);
+                                var restantes = [];
+                                rooms[x.actualRoomIndex].objects.forEach(function (x) {
+                                    if (x.name != obj.name) {
+                                        restantes.push(x);
+                                    }
+                                });
+                                rooms[x.actualRoomIndex].objects = restantes;
+                                server.send("Voce pegou o objeto: ".concat(obj.name, "!"), rinfo.port);
+                            }
                         }
                     });
                 }
@@ -213,18 +215,70 @@ server.on('message', function (msg, rinfo) {
             break;
         case "largar":
             var objeto = msg.toString().split(":")[1].trim();
-            server.send("Voce largou o objeto!", rinfo.port);
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    if (x.inventario) {
+                        if (x.inventario.filter(function (x) { return x.name == objeto; })[0]) {
+                            if (rooms[x.actualRoomIndex].objects.filter(function (obj) { return obj.name == objeto; })[0]) {
+                                server.send("Voce nao pode largar o item ".concat(objeto, " aqui pois ja existe esse item nessa sala!"), rinfo.port);
+                            }
+                            else {
+                                var itensRestantesInventario_1 = [];
+                                x.inventario.forEach(function (inv) {
+                                    console.log(inv);
+                                    if (inv.name != objeto) {
+                                        itensRestantesInventario_1.push(inv);
+                                    }
+                                    else {
+                                        server.send("Voce largou o item: ".concat(inv.name), rinfo.port);
+                                        rooms[x.actualRoomIndex].objects.push(inv);
+                                    }
+                                });
+                                x.inventario = itensRestantesInventario_1;
+                            }
+                        }
+                        else {
+                            server.send("Voce nao tem o item: ".concat(objeto, " no seu invetario para largar"), rinfo.port);
+                        }
+                    }
+                    else {
+                        server.send("Voce nao tem o item: ".concat(objeto, " no seu invetario para largar"), rinfo.port);
+                    }
+                }
+            });
             break;
         case "inventario":
-            server.send("Itens do seu inventario:", rinfo.port);
+            var itemsInventario_1 = "Itens no seu inventario:";
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    if (x.inventario) {
+                        x.inventario.forEach(function (item) {
+                            itemsInventario_1 = "".concat(itemsInventario_1, " ").concat(item.name, " |");
+                        });
+                        if (!x.inventario.length) {
+                            itemsInventario_1 = "Voce nao tem nenhum item no inventario!";
+                        }
+                    }
+                    else {
+                        itemsInventario_1 = "Voce nao tem nenhum item no inventario!";
+                    }
+                }
+            });
+            server.send(itemsInventario_1, rinfo.port);
             break;
         case "usar":
             server.send("Voce usou o objeto");
             break;
         case "falar":
             var message = msg.toString().split(":")[1];
-            clients.forEach(function (current) {
-                server.send(message, 0, message.length, current.port, current.address);
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    if (rooms[x.actualRoomIndex].users) {
+                        rooms[x.actualRoomIndex].users.forEach(function (current) {
+                            server.send(message, 0, message.length, current.port, current.address);
+                        });
+                    }
+                }
             });
             break;
         case "cochichar":
