@@ -109,7 +109,7 @@ function getNome(name, address, port) {
     }
 }
 var clients = [];
-var key = new item("Chave", true, false, false, "Chave: pode ser utilizada para abrir qualquer sala, basta digitar a posicao em que a porta da sala esta, por exemplo usar: Chave Sala2");
+var key = new item("Chave", true, false, false, "Chave: pode ser utilizada para abrir qualquer sala, basta digitar o nome da sala adjacente, por exemplo usar: Chave Sala2");
 var sword = new item("Espada", false, true, false, "Espada: pode ser utilizada para atacar seus inimigos");
 var dragon = new item("Dragao", false, false, true, "Dragao: ele eh seu inimigo", 30);
 var nameRoom1 = 'Sala1';
@@ -346,7 +346,7 @@ server.on('message', function (msg, rinfo) {
                             server.send("\nVoce se moveu para sala: ".concat(rooms[destinationRoomIndex_1].name), rinfo.port);
                             rooms[x.actualRoomIndex].users.forEach(function (u) {
                                 if (u.port != rinfo.port) {
-                                    var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " acabou de se entrar na sala");
+                                    var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " acabou de entrar na sala");
                                     server.send(msgs, 0, msgs.length, u.port, u.address);
                                 }
                             });
@@ -569,12 +569,13 @@ server.on('message', function (msg, rinfo) {
             }
             break;
         case "falar":
-            var message = msg.toString().split(":")[1];
+            var message = msg.toString().split(":")[1].trim();
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
                     if (rooms[x.actualRoomIndex].users) {
+                        var mensagemFinal_1 = "".concat(getNome(x.name, x.address, x.port), " disse: ").concat(message);
                         rooms[x.actualRoomIndex].users.forEach(function (current) {
-                            server.send(message, 0, message.length, current.port, current.address);
+                            server.send(mensagemFinal_1, 0, mensagemFinal_1.length, current.port, current.address);
                         });
                     }
                 }
