@@ -561,6 +561,9 @@ server.on('message', (msg: string, rinfo: client) => {
       if (mensagem1 && param2) {
         clients.forEach(x => {
           if (x.port == rinfo.port && x.address == rinfo.address) {
+            if (param2 == `${x.address}:${x.port}` || param2 == x.name) {
+              server.send(`Voce nao pode cochichar para voce mesmo!`, rinfo.port);
+            }
             var user = rooms[x.actualRoomIndex].users.filter(xs => xs.name == param2 || `${xs.address}:${xs.port}` == param2)[0];
             console.log(user);
             if (user) {
