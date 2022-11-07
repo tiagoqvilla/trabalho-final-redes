@@ -203,7 +203,7 @@ var printMap = function (rooms, address, port) {
     server.send(currentMap, port);
 };
 var ajuda = function () {
-    return "".concat(Couleurs("Lista de comandos disponiveis:", "#2980b9"), " \n\n  ").concat(Couleurs("mapa", [255, 255, 0]), " -- Exibe o mapa da localiza\u00E7\u00E3o atual do jogador\n\n  ").concat(Couleurs("examinar", [255, 255, 0]), " -- Examina a sala atual\n\n  ").concat(Couleurs("mover: [N/S/L/O]", [255, 255, 0]), " -- Move o jogador para uma sala\n\n  ").concat(Couleurs("pegar: [objeto]", [255, 255, 0]), " -- Coleta um objeto contido na sala atual\n\n  ").concat(Couleurs("largar: [objeto]", [255, 255, 0]), " -- Larga um objeto contido no invent\u00E1rio do jogador\n\n  ").concat(Couleurs("inventario", [255, 255, 0]), " -- Exibe o seu inventario\n\n  ").concat(Couleurs("usar: [objeto] {alvo}", [255, 255, 0]), " -- Usa um objeto. Alguns objetos podem ser usados em alvos espec\u00EDficos\n\n  ").concat(Couleurs("falar: [texto]", [255, 255, 0]), " -- Envia uma mensagem de texto para todos os jogadores presentes na sala atual\n\n  ").concat(Couleurs("cochichar: [texto] [jogador]", [255, 255, 0]), " -- Envia uma mensagem de texto para um jogador espec\u00EDfico na sala atual\n\n  ").concat(Couleurs("ajuda", [255, 255, 0]), " -- Lista todos os comandos poss\u00EDveis do jogo\n\n  ");
+    return "".concat(Couleurs("Lista de comandos disponiveis:", "#2980b9"), " \n\n  ").concat(Couleurs("mapa", [255, 255, 0]), " -- Exibe o mapa da localiza\u00E7\u00E3o atual do jogador\n\n  ").concat(Couleurs("examinar: [objeto/sala]", [255, 255, 0]), " -- Examina o objeto, sala atual ou verifica se a porta da sala adjacente esta aberta ou fechada.\n\n  ").concat(Couleurs("mover: [N/S/L/O]", [255, 255, 0]), " -- Move o jogador para uma sala\n\n  ").concat(Couleurs("pegar: [objeto]", [255, 255, 0]), " -- Coleta um objeto contido na sala atual\n\n  ").concat(Couleurs("largar: [objeto]", [255, 255, 0]), " -- Larga um objeto contido no invent\u00E1rio do jogador\n\n  ").concat(Couleurs("inventario", [255, 255, 0]), " -- Exibe o seu inventario\n\n  ").concat(Couleurs("usar: [objeto] {alvo}", [255, 255, 0]), " -- Usa um objeto. Alguns objetos podem ser usados em alvos espec\u00EDficos\n\n  ").concat(Couleurs("falar: [texto]", [255, 255, 0]), " -- Envia uma mensagem de texto para todos os jogadores presentes na sala atual\n\n  ").concat(Couleurs("cochichar: \"[texto]\" [jogador]", [255, 255, 0]), " -- Envia uma mensagem de texto para um jogador espec\u00EDfico na sala atual\n\n  ").concat(Couleurs("setarnome: [nome]", [255, 255, 0]), " -- Seta um nome para voce uilizar\n\n  ").concat(Couleurs("nome:", [255, 255, 0]), " -- Exibe seu nome atual\n\n  ").concat(Couleurs("ajuda", [255, 255, 0]), " -- Lista todos os comandos poss\u00EDveis do jogo\n\n  ");
 };
 server.on('error', function (err) {
     console.log("server error:", err);
@@ -225,7 +225,7 @@ server.on('message', function (msg, rinfo) {
     var command = msg.toString().split(":")[0].toLowerCase();
     switch (command) {
         case "welcome":
-            server.send("Bem vindo ao servidor!\n\n", rinfo.port);
+            server.send("Bem vindo ao servidor!\n\n O seu objetivo eh chegar ate o poderoso dragao, para isso voce precisara encontrar meios para acessar as outras salas e tambem encontrar uma forma de matar o dragao.\n Boa sorte!", rinfo.port);
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
                     rooms[0].users.push(x);
@@ -236,12 +236,48 @@ server.on('message', function (msg, rinfo) {
             });
             break;
         case "examinar":
-            server.send("\nVoce examinou a sala!", rinfo.port);
-            clients.forEach(function (x) {
-                if (x.port == rinfo.port && x.address == rinfo.address) {
-                    server.send(rooms[x.actualRoomIndex].examinar(), rinfo.port);
-                }
-            });
+            var object_1 = msg.toString().split(":")[1];
+            if (object_1) {
+                object_1 = object_1.trim();
+                clients.forEach(function (x) {
+                    var _a;
+                    if (x.port == rinfo.port && x.address == rinfo.address) {
+                        if (object_1 == rooms[x.actualRoomIndex].name) {
+                            server.send(rooms[x.actualRoomIndex].examinar(), rinfo.port);
+                        }
+                        else if (rooms[x.actualRoomIndex].adjacentRooms.filter(function (x) { return x.name == object_1; })[0]) {
+                            var room_1 = rooms[x.actualRoomIndex].adjacentRooms.filter(function (x) { return x.name == object_1; })[0];
+                            rooms.forEach(function (xs) {
+                                if (xs.name == room_1.name) {
+                                    server.send("A porta da sala adjacente: ".concat(xs.name, " esta: ").concat(xs.roomIsOpen()), rinfo.port);
+                                }
+                            });
+                        }
+                        else if (rooms[x.actualRoomIndex].objects.filter(function (ys) { return ys.name == object_1; })[0] || ((_a = x.inventario) === null || _a === void 0 ? void 0 : _a.filter(function (zs) { return zs.name == object_1; })[0])) {
+                            var description_1 = "";
+                            rooms[x.actualRoomIndex].objects.forEach(function (ys) {
+                                if (ys.name == object_1) {
+                                    description_1 = ys.description;
+                                }
+                            });
+                            if (x.inventario) {
+                                x.inventario.forEach(function (ys) {
+                                    if (ys.name == object_1) {
+                                        description_1 = ys.description;
+                                    }
+                                });
+                            }
+                            server.send(description_1, rinfo.port);
+                        }
+                        else {
+                            server.send("O item ".concat(object_1, " nao foi encontrado na sala ou em seu inventario!"), rinfo.port);
+                        }
+                    }
+                });
+            }
+            else {
+                server.send("\nComando invalido, para ver a forma correta de uso utilize o comando ajuda:", rinfo.port);
+            }
             break;
         case "mover":
             clients.forEach(function (x) {
@@ -483,7 +519,7 @@ server.on('message', function (msg, rinfo) {
                         if (user) {
                             var mensagem = "";
                             if (x.name) {
-                                mensagem = "".concat(x.name, " cochichou - ").concat(mensagem1_1);
+                                mensagem = "".concat(x.name, " cochichou para voce - ").concat(mensagem1_1);
                             }
                             else {
                                 mensagem = "".concat(x.address, ":").concat(x.port, " cochichou - ").concat(mensagem1_1);
