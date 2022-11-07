@@ -100,8 +100,16 @@ var adjacentRoom = /** @class */ (function () {
     return adjacentRoom;
 }());
 exports.adjacentRoom = adjacentRoom;
+function getNome(name, address, port) {
+    if (name) {
+        return name;
+    }
+    else {
+        return "".concat(address, ":").concat(port);
+    }
+}
 var clients = [];
-var key = new item("Chave", true, false, false, "Chave: pode ser utilizada para abrir qualquer sala, basta digitar a posicao em que a porta da sala esta, por exemplo usar: chave L");
+var key = new item("Chave", true, false, false, "Chave: pode ser utilizada para abrir qualquer sala, basta digitar a posicao em que a porta da sala esta, por exemplo usar: Chave Sala2");
 var sword = new item("Espada", false, true, false, "Espada: pode ser utilizada para atacar seus inimigos");
 var dragon = new item("Dragao", false, false, true, "Dragao: ele eh seu inimigo", 30);
 var nameRoom1 = 'Sala1';
@@ -232,6 +240,12 @@ server.on('message', function (msg, rinfo) {
                     x.actualRoom = rooms[0];
                     x.actualRoomIndex = 0;
                     server.send(rooms[0].examinar(), rinfo.port);
+                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                        if (u.port != rinfo.port) {
+                            var msgs = "O jogador: ".concat(x.address, ":").concat(x.port, " acabou de entrar no servidor");
+                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                        }
+                    });
                 }
             });
             break;
@@ -250,6 +264,12 @@ server.on('message', function (msg, rinfo) {
                             rooms.forEach(function (xs) {
                                 if (xs.name == room_1.name) {
                                     server.send("A porta da sala adjacente: ".concat(xs.name, " esta: ").concat(xs.roomIsOpen()), rinfo.port);
+                                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                        if (u.port != rinfo.port) {
+                                            var msgs = "O jogador: ".concat(getNome(x.name, x.address, x.port), " acabou examinar uma porta");
+                                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                                        }
+                                    });
                                 }
                             });
                         }
@@ -268,6 +288,12 @@ server.on('message', function (msg, rinfo) {
                                 });
                             }
                             server.send(description_1, rinfo.port);
+                            rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                if (u.port != rinfo.port) {
+                                    var msgs = "O jogador: ".concat(getNome(x.name, x.address, x.port), " acabou examinar um item");
+                                    server.send(msgs, 0, msgs.length, u.port, u.address);
+                                }
+                            });
                         }
                         else {
                             server.send("O item ".concat(object_1, " nao foi encontrado na sala ou em seu inventario!"), rinfo.port);
@@ -307,11 +333,23 @@ server.on('message', function (msg, rinfo) {
                             }
                         });
                         if (rooms[destinationRoomIndex_1].isOpen) {
+                            rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                if (u.port != rinfo.port) {
+                                    var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " acabou de se mover para outra sala");
+                                    server.send(msgs, 0, msgs.length, u.port, u.address);
+                                }
+                            });
                             rooms[x.actualRoomIndex].users.splice(userIndex_1, 1);
                             x.actualRoom = rooms[destinationRoomIndex_1];
                             x.actualRoomIndex = destinationRoomIndex_1;
                             rooms[destinationRoomIndex_1].users.push(x);
                             server.send("\nVoce se moveu para sala: ".concat(rooms[destinationRoomIndex_1].name), rinfo.port);
+                            rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                if (u.port != rinfo.port) {
+                                    var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " acabou de se entrar na sala");
+                                    server.send(msgs, 0, msgs.length, u.port, u.address);
+                                }
+                            });
                             server.send(rooms[destinationRoomIndex_1].examinar(), rinfo.port);
                         }
                         else {
@@ -352,6 +390,12 @@ server.on('message', function (msg, rinfo) {
                                 });
                                 rooms[x.actualRoomIndex].objects = restantes;
                                 server.send("\nVoce pegou o objeto: ".concat(obj.name, "!"), rinfo.port);
+                                rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                    if (u.port != rinfo.port) {
+                                        var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " pegou um objeto");
+                                        server.send(msgs, 0, msgs.length, u.port, u.address);
+                                    }
+                                });
                             }
                         }
                     });
@@ -379,6 +423,12 @@ server.on('message', function (msg, rinfo) {
                                     }
                                     else {
                                         server.send("\nVoce largou o item: ".concat(inv.name), rinfo.port);
+                                        rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                            if (u.port != rinfo.port) {
+                                                var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " largou um objeto");
+                                                server.send(msgs, 0, msgs.length, u.port, u.address);
+                                            }
+                                        });
                                         rooms[x.actualRoomIndex].objects.push(inv);
                                     }
                                 });
@@ -410,9 +460,15 @@ server.on('message', function (msg, rinfo) {
                     else {
                         itemsInventario_1 = "\nVoce nao tem nenhum item no inventario!";
                     }
+                    server.send(itemsInventario_1, rinfo.port);
+                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                        if (u.port != rinfo.port) {
+                            var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " olhou o inventario");
+                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                        }
+                    });
                 }
             });
-            server.send(itemsInventario_1, rinfo.port);
             break;
         case "usar":
             var params = msg.toString().split(":")[1].trim();
@@ -438,6 +494,12 @@ server.on('message', function (msg, rinfo) {
                                                 else {
                                                     sala.setOpen();
                                                     server.send("\nVoce abriu a porta da: ".concat(param2), rinfo.port);
+                                                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                                        if (u.port != rinfo.port) {
+                                                            var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " abriu uma porta");
+                                                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                                                        }
+                                                    });
                                                 }
                                             }
                                         });
@@ -453,15 +515,33 @@ server.on('message', function (msg, rinfo) {
                                                 if (xs.life == 30) {
                                                     xs.life = xs.life - 10;
                                                     server.send("\nVoce golpeia o poderoso Dragao usando a sua ".concat(param1, ", mas nao eh o suficiente para mata-lo"), rinfo.port);
+                                                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                                        if (u.port != rinfo.port) {
+                                                            var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " golpeou o dragao");
+                                                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                                                        }
+                                                    });
                                                 }
                                                 else if (xs.life == 20) {
                                                     xs.life = xs.life - 10;
                                                     server.send("\nVoce acerta o Dragao em cheio e ele cai no chao, apenas mais um golpe e sua missao estara finalizada", rinfo.port);
+                                                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                                        if (u.port != rinfo.port) {
+                                                            var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " golpeou o dragao");
+                                                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                                                        }
+                                                    });
                                                 }
                                                 else if (xs.life == 10) {
                                                     xs.life = xs.life - 10;
                                                     server.send("\nVoce pega sua ".concat(param1, " chega perto do Dragao e da o ultimo golpe nele, ele solta um enorme rugido e morre!"), rinfo.port);
                                                     server.send("\nParabens voce desbravou este mundo e concluiu seu objetivo de matar o dragao!", rinfo.port);
+                                                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                                                        if (u.port != rinfo.port) {
+                                                            var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " matou o dragao");
+                                                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                                                        }
+                                                    });
                                                 }
                                                 else if (xs.life == 0) {
                                                     server.send("\nO Dragao ja esta morto!", rinfo.port);
@@ -502,6 +582,16 @@ server.on('message', function (msg, rinfo) {
             break;
         case "mapa":
             printMap(rooms, rinfo.address, rinfo.port);
+            clients.forEach(function (x) {
+                if (x.port == rinfo.port && x.address == rinfo.address) {
+                    rooms[x.actualRoomIndex].users.forEach(function (u) {
+                        if (u.port != rinfo.port) {
+                            var msgs = "O jogador:".concat(getNome(x.name, x.address, x.port), " abriu o mapa");
+                            server.send(msgs, 0, msgs.length, u.port, u.address);
+                        }
+                    });
+                }
+            });
             break;
         case "cochichar":
             var params = msg.toString().split(":")[1].trim();
@@ -514,6 +604,9 @@ server.on('message', function (msg, rinfo) {
             if (mensagem1_1 && param2) {
                 clients.forEach(function (x) {
                     if (x.port == rinfo.port && x.address == rinfo.address) {
+                        if (param2 == "".concat(x.address, ":").concat(x.port) || param2 == x.name) {
+                            server.send("Voce nao pode cochichar para voce mesmo!", rinfo.port);
+                        }
                         var user = rooms[x.actualRoomIndex].users.filter(function (xs) { return xs.name == param2 || "".concat(xs.address, ":").concat(xs.port) == param2; })[0];
                         console.log(user);
                         if (user) {
@@ -539,12 +632,26 @@ server.on('message', function (msg, rinfo) {
             break;
         case "ajuda":
             server.send(ajuda(), rinfo.port);
+            var cliente_1 = clients.filter(function (x) { return x.address == rinfo.address && x.port == rinfo.port; })[0];
+            rooms[cliente_1.actualRoomIndex].users.forEach(function (u) {
+                if (u.port != rinfo.port) {
+                    var msgs = "O jogador:".concat(getNome(cliente_1.name, cliente_1.address, cliente_1.port), " usou o comando de ajuda");
+                    server.send(msgs, 0, msgs.length, u.port, u.address);
+                }
+            });
             break;
         case "setarnome":
             var client_1 = clients.filter(function (x) { return x.address == rinfo.address && x.port == rinfo.port; })[0];
             var index = clients.indexOf(client_1);
             clients[index].name = msg.toString().split(":")[1].trim();
             server.send("\nNome setado para: ".concat(clients[index].name), rinfo.port);
+            rooms[client_1.actualRoomIndex].users.forEach(function (u) {
+                if (u.port != rinfo.port) {
+                    console.log(u);
+                    var msgs = "O jogador:".concat(getNome(client_1.name, client_1.address, client_1.port), " mudou o nome");
+                    server.send(msgs, 0, msgs.length, u.port, u.address);
+                }
+            });
             break;
         case "nome":
             client_1 = clients.filter(function (x) { return x.address == rinfo.address && x.port == rinfo.port; })[0];
