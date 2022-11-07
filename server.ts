@@ -63,11 +63,28 @@ export class room {
   }
 
   public examinar() {
-    return `Voce esta na sala: ${this.name} \nA sala esta: ${this.roomIsOpen()} \nAs salas adjacentes e suas posicoes sao:${this.getSalas()} \nOs itens presentes nela sao:${this.getItems()}`;
+    return `Voce esta na sala: ${this.name}
+    \nA sala esta: ${this.roomIsOpen()}
+    \nAs salas adjacentes e suas posicoes sao:${this.getSalas()}
+    \nOs itens presentes nela sao:${this.getItems()}
+    \nOs jogadores presentes nela sao:${this.getUsers()}`;
   }
 
   public roomIsOpen(): string {
     return this.isOpen ? "Aberta" : "Fechada";
+  }
+  
+  public getUsers() {
+    let usuarios = ""
+    this.users.forEach(x => {
+      if (x.name) {
+        usuarios = `${usuarios} | ${x.name}`
+      } else {
+        console.log(x.address, x.port);
+        usuarios = `${usuarios} | ${x.address}:${x.port}`
+      }
+    })
+    return usuarios;
   }
 
   public setOpen() {
@@ -75,7 +92,6 @@ export class room {
   }
 
   public getSalas(): string {
-    console.log(this.adjacentRooms);
     if (this.adjacentRooms.length > 0) {
       let salas = ""
       this.adjacentRooms.forEach(x => {
@@ -279,10 +295,7 @@ server.on('message', (msg: string, rinfo: client) => {
 
       break;
     case "examinar":
-      // var params = msg.toString().split(":")[1]
-      // var param1 = params.split(" ")[0];
-      // var param2 = params.split(" ")[1];
-      // console.log(param1, param2);
+
       server.send("\nVoce examinou a sala!", rinfo.port);
       clients.forEach(x => {
         if (x.port == rinfo.port && x.address == rinfo.address) {
@@ -505,7 +518,35 @@ server.on('message', (msg: string, rinfo: client) => {
       printMap(rooms, rinfo.address, rinfo.port);
       break;
     case "cochichar":
-      server.send("Voce usou o cochichou");
+      var params = msg.toString().split(":")[1].trim();
+      const mensagem1 = /"(.*?)"/.exec(params)[1];
+      var param2 = params.replace(`"${mensagem1}"`, "").trim();
+      if (msg.toString().split(":")[2]) {
+        var param2 = params.replace(`"${mensagem1}"`, "").trim() + ":" + msg.toString().split(":")[2].trim();
+      }
+      console.log(param2)
+      if (mensagem1 && param2) {
+        clients.forEach(x => {
+          if (x.port == rinfo.port && x.address == rinfo.address) {
+            var user = rooms[x.actualRoomIndex].users.filter(xs => xs.name == param2 || `${xs.address}:${xs.port}` == param2)[0];
+            console.log(user);
+            if (user) {
+              let mensagem = "";
+              if (x.name) {
+                mensagem = `${x.name} cochichou para voce - ${mensagem1}`;
+              } else {
+                mensagem = `${x.address}:${x.port} cochichou - ${mensagem1}`;
+              }
+              server.send(mensagem, 0, mensagem.length, user.port, user.address);
+              server.send(`\nCochicho enviado!`, rinfo.port);
+            } else {
+              server.send(`\nUsuario: ${param2} nao encontrado`, rinfo.port);
+            }
+          }
+        })
+      } else {
+        server.send("\nComando invalido, para ver a forma correta de uso utilize o comando ajuda:", rinfo.port);
+      }
       break;
     case "ajuda":
       server.send(ajuda(), rinfo.port);

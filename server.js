@@ -43,16 +43,28 @@ var room = /** @class */ (function () {
         this.description = description;
     }
     room.prototype.examinar = function () {
-        return "Voce esta na sala: ".concat(this.name, " \nA sala esta: ").concat(this.roomIsOpen(), " \nAs salas adjacentes e suas posicoes sao:").concat(this.getSalas(), " \nOs itens presentes nela sao:").concat(this.getItems());
+        return "Voce esta na sala: ".concat(this.name, "\n    \nA sala esta: ").concat(this.roomIsOpen(), "\n    \nAs salas adjacentes e suas posicoes sao:").concat(this.getSalas(), "\n    \nOs itens presentes nela sao:").concat(this.getItems(), "\n    \nOs jogadores presentes nela sao:").concat(this.getUsers());
     };
     room.prototype.roomIsOpen = function () {
         return this.isOpen ? "Aberta" : "Fechada";
+    };
+    room.prototype.getUsers = function () {
+        var usuarios = "";
+        this.users.forEach(function (x) {
+            if (x.name) {
+                usuarios = "".concat(usuarios, " | ").concat(x.name);
+            }
+            else {
+                console.log(x.address, x.port);
+                usuarios = "".concat(usuarios, " | ").concat(x.address, ":").concat(x.port);
+            }
+        });
+        return usuarios;
     };
     room.prototype.setOpen = function () {
         this.isOpen = true;
     };
     room.prototype.getSalas = function () {
-        console.log(this.adjacentRooms);
         if (this.adjacentRooms.length > 0) {
             var salas_1 = "";
             this.adjacentRooms.forEach(function (x) {
@@ -224,10 +236,6 @@ server.on('message', function (msg, rinfo) {
             });
             break;
         case "examinar":
-            // var params = msg.toString().split(":")[1]
-            // var param1 = params.split(" ")[0];
-            // var param2 = params.split(" ")[1];
-            // console.log(param1, param2);
             server.send("\nVoce examinou a sala!", rinfo.port);
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
@@ -460,7 +468,38 @@ server.on('message', function (msg, rinfo) {
             printMap(rooms, rinfo.address, rinfo.port);
             break;
         case "cochichar":
-            server.send("Voce usou o cochichou");
+            var params = msg.toString().split(":")[1].trim();
+            var mensagem1_1 = /"(.*?)"/.exec(params)[1];
+            var param2 = params.replace("\"".concat(mensagem1_1, "\""), "").trim();
+            if (msg.toString().split(":")[2]) {
+                var param2 = params.replace("\"".concat(mensagem1_1, "\""), "").trim() + ":" + msg.toString().split(":")[2].trim();
+            }
+            console.log(param2);
+            if (mensagem1_1 && param2) {
+                clients.forEach(function (x) {
+                    if (x.port == rinfo.port && x.address == rinfo.address) {
+                        var user = rooms[x.actualRoomIndex].users.filter(function (xs) { return xs.name == param2 || "".concat(xs.address, ":").concat(xs.port) == param2; })[0];
+                        console.log(user);
+                        if (user) {
+                            var mensagem = "";
+                            if (x.name) {
+                                mensagem = "".concat(x.name, " cochichou - ").concat(mensagem1_1);
+                            }
+                            else {
+                                mensagem = "".concat(x.address, ":").concat(x.port, " cochichou - ").concat(mensagem1_1);
+                            }
+                            server.send(mensagem, 0, mensagem.length, user.port, user.address);
+                            server.send("\nCochicho enviado!", rinfo.port);
+                        }
+                        else {
+                            server.send("\nUsuario: ".concat(param2, " nao encontrado"), rinfo.port);
+                        }
+                    }
+                });
+            }
+            else {
+                server.send("\nComando invalido, para ver a forma correta de uso utilize o comando ajuda:", rinfo.port);
+            }
             break;
         case "ajuda":
             server.send(ajuda(), rinfo.port);
