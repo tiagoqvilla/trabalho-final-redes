@@ -43,13 +43,17 @@ var room = /** @class */ (function () {
         this.description = description;
     }
     room.prototype.examinar = function () {
-        return "Voce esta na sala: ".concat(this.name, ", a sala esta ").concat(this.roomIsOpen(), ", os itens presentes nela sao:").concat(this.getItems(), ", as salas adjacentes e suas posicoes sao:").concat(this.getSalas());
+        return "Voce esta na sala: ".concat(this.name, " \nA sala esta: ").concat(this.roomIsOpen(), " \nAs salas adjacentes e suas posicoes sao:").concat(this.getSalas(), " \nOs itens presentes nela sao:").concat(this.getItems());
     };
     room.prototype.roomIsOpen = function () {
-        return this.isOpen ? "aberta" : "fechada";
+        return this.isOpen ? "Aberta" : "Fechada";
+    };
+    room.prototype.setOpen = function () {
+        this.isOpen = true;
     };
     room.prototype.getSalas = function () {
-        if (this.objects.length > 0) {
+        console.log(this.adjacentRooms);
+        if (this.adjacentRooms.length > 0) {
             var salas_1 = "";
             this.adjacentRooms.forEach(function (x) {
                 salas_1 = "".concat(salas_1, " | ").concat(x.name, " na posicao ").concat(x.position);
@@ -57,7 +61,7 @@ var room = /** @class */ (function () {
             return salas_1;
         }
         else {
-            return "nenhum";
+            return "Nenhuma sala adjacente!";
         }
     };
     room.prototype.getItems = function () {
@@ -69,7 +73,7 @@ var room = /** @class */ (function () {
             return items_1;
         }
         else {
-            return "nenhum";
+            return "Nenhum item!";
         }
     };
     return room;
@@ -93,12 +97,12 @@ var nameRoom2 = 'Sala2';
 var nameRoom3 = 'Sala3';
 var nameRoom4 = 'Sala4';
 var nameRoom5 = 'Sala5';
-var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(2, "L", nameRoom2)], "sala poderosa");
+var room1 = new room(1, nameRoom1, [], [key, sword], true, [new adjacentRoom(3, "L", nameRoom3)], "sala poderosa");
 //deixar todas como false
-var room2 = new room(2, nameRoom2, [], [key], true, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2");
-var room3 = new room(3, nameRoom3, [], [key, sword], true, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1)], "sala poderosa 3");
-var room4 = new room(4, nameRoom4, [], [key], true, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4");
-var room5 = new room(5, nameRoom5, [], [key, dragon], true, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5");
+var room2 = new room(2, nameRoom2, [], [key], false, [new adjacentRoom(3, "N", nameRoom3)], "sala poderosa 2");
+var room3 = new room(3, nameRoom3, [], [key, sword], false, [new adjacentRoom(4, "N", nameRoom4), new adjacentRoom(1, "O", nameRoom1), new adjacentRoom(2, "S", nameRoom2)], "sala poderosa 3");
+var room4 = new room(4, nameRoom4, [], [key], false, [new adjacentRoom(3, "S", nameRoom3), new adjacentRoom(5, "L", nameRoom5)], "sala poderosa 4");
+var room5 = new room(5, nameRoom5, [], [dragon], false, [new adjacentRoom(4, "O", nameRoom4)], "sala poderosa 5");
 var rooms = [room1, room2, room3, room4, room5];
 var generatedRooms = [];
 var marksConfigs = {
@@ -154,7 +158,7 @@ var printMap = function (rooms, address, port) {
         "with": generatedRooms[1],
         where: {
             x: 60,
-            y: 5
+            y: 9
         }
     });
     // Sala 3
@@ -163,7 +167,7 @@ var printMap = function (rooms, address, port) {
         "with": generatedRooms[2],
         where: {
             x: 60,
-            y: 9
+            y: 5
         }
     });
     // Sala 4
@@ -186,6 +190,9 @@ var printMap = function (rooms, address, port) {
     });
     server.send(currentMap, port);
 };
+var ajuda = function () {
+    return "".concat(Couleurs("Lista de comandos disponiveis:", "#2980b9"), " \n\n  ").concat(Couleurs("mapa", [255, 255, 0]), " -- Exibe o mapa da localiza\u00E7\u00E3o atual do jogador\n\n  ").concat(Couleurs("examinar", [255, 255, 0]), " -- Examina a sala atual\n\n  ").concat(Couleurs("mover: [N/S/L/O]", [255, 255, 0]), " -- Move o jogador para uma sala\n\n  ").concat(Couleurs("pegar: [objeto]", [255, 255, 0]), " -- Coleta um objeto contido na sala atual\n\n  ").concat(Couleurs("largar: [objeto]", [255, 255, 0]), " -- Larga um objeto contido no invent\u00E1rio do jogador\n\n  ").concat(Couleurs("inventario", [255, 255, 0]), " -- Exibe o seu inventario\n\n  ").concat(Couleurs("usar: [objeto] {alvo}", [255, 255, 0]), " -- Usa um objeto. Alguns objetos podem ser usados em alvos espec\u00EDficos\n\n  ").concat(Couleurs("falar: [texto]", [255, 255, 0]), " -- Envia uma mensagem de texto para todos os jogadores presentes na sala atual\n\n  ").concat(Couleurs("cochichar: [texto] [jogador]", [255, 255, 0]), " -- Envia uma mensagem de texto para um jogador espec\u00EDfico na sala atual\n\n  ").concat(Couleurs("ajuda", [255, 255, 0]), " -- Lista todos os comandos poss\u00EDveis do jogo\n\n  ");
+};
 server.on('error', function (err) {
     console.log("server error:", err);
     server.close();
@@ -206,7 +213,7 @@ server.on('message', function (msg, rinfo) {
     var command = msg.toString().split(":")[0].toLowerCase();
     switch (command) {
         case "welcome":
-            server.send("Bem vindo ao servidor!", rinfo.port);
+            server.send("Bem vindo ao servidor!\n\n", rinfo.port);
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
                     rooms[0].users.push(x);
@@ -217,7 +224,11 @@ server.on('message', function (msg, rinfo) {
             });
             break;
         case "examinar":
-            server.send("Voce examinou a sala!", rinfo.port);
+            // var params = msg.toString().split(":")[1]
+            // var param1 = params.split(" ")[0];
+            // var param2 = params.split(" ")[1];
+            // console.log(param1, param2);
+            server.send("\nVoce examinou a sala!", rinfo.port);
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
                     server.send(rooms[x.actualRoomIndex].examinar(), rinfo.port);
@@ -256,21 +267,25 @@ server.on('message', function (msg, rinfo) {
                             x.actualRoom = rooms[destinationRoomIndex_1];
                             x.actualRoomIndex = destinationRoomIndex_1;
                             rooms[destinationRoomIndex_1].users.push(x);
-                            server.send("Voce se moveu para sala: ".concat(rooms[destinationRoomIndex_1].name), rinfo.port);
+                            server.send("\nVoce se moveu para sala: ".concat(rooms[destinationRoomIndex_1].name), rinfo.port);
                             server.send(rooms[destinationRoomIndex_1].examinar(), rinfo.port);
                         }
                         else {
-                            server.send('A porta dessa sala esta fechada, voce precisa abrir ela usando uma chave', rinfo.port);
+                            server.send('\nA porta dessa sala esta fechada, voce precisa abrir ela usando uma chave', rinfo.port);
                         }
                     }
                     else {
-                        server.send("Voce tentou ir para uma posicao que nao eh valida, examine a sala para saber os caminhos", rinfo.port);
+                        server.send("\nVoce tentou ir para uma posicao que nao eh valida, examine a sala para saber os caminhos", rinfo.port);
                     }
                 }
             });
             break;
         case "pegar":
             var objeto = msg.toString().split(":")[1].trim();
+            if (objeto == "Dragao") {
+                server.send("\nVoce nao pode pegar o objeto Dragao!", rinfo.port);
+                return;
+            }
             var objetoPego_1 = null;
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
@@ -281,7 +296,7 @@ server.on('message', function (msg, rinfo) {
                                 x.inventario = [];
                             }
                             if (x.inventario.filter(function (item) { return item.name == objetoPego_1.name; })[0]) {
-                                server.send("Voce ja tem o item ".concat(objetoPego_1.name, " no seu inventario"), rinfo.port);
+                                server.send("\nVoce ja tem o item ".concat(objetoPego_1.name, " no seu inventario"), rinfo.port);
                             }
                             else {
                                 x.inventario.push(obj);
@@ -292,14 +307,14 @@ server.on('message', function (msg, rinfo) {
                                     }
                                 });
                                 rooms[x.actualRoomIndex].objects = restantes;
-                                server.send("Voce pegou o objeto: ".concat(obj.name, "!"), rinfo.port);
+                                server.send("\nVoce pegou o objeto: ".concat(obj.name, "!"), rinfo.port);
                             }
                         }
                     });
                 }
             });
             if (!objetoPego_1) {
-                server.send("O item ".concat(objeto, " nao existe na sala!"), rinfo.port);
+                server.send("\nO item ".concat(objeto, " nao existe na sala!"), rinfo.port);
             }
             break;
         case "largar":
@@ -309,7 +324,7 @@ server.on('message', function (msg, rinfo) {
                     if (x.inventario) {
                         if (x.inventario.filter(function (x) { return x.name == objeto; })[0]) {
                             if (rooms[x.actualRoomIndex].objects.filter(function (obj) { return obj.name == objeto; })[0]) {
-                                server.send("Voce nao pode largar o item ".concat(objeto, " aqui pois ja existe esse item nessa sala!"), rinfo.port);
+                                server.send("\nVoce nao pode largar o item ".concat(objeto, " aqui pois ja existe esse item nessa sala!"), rinfo.port);
                             }
                             else {
                                 var itensRestantesInventario_1 = [];
@@ -319,7 +334,7 @@ server.on('message', function (msg, rinfo) {
                                         itensRestantesInventario_1.push(inv);
                                     }
                                     else {
-                                        server.send("Voce largou o item: ".concat(inv.name), rinfo.port);
+                                        server.send("\nVoce largou o item: ".concat(inv.name), rinfo.port);
                                         rooms[x.actualRoomIndex].objects.push(inv);
                                     }
                                 });
@@ -327,17 +342,17 @@ server.on('message', function (msg, rinfo) {
                             }
                         }
                         else {
-                            server.send("Voce nao tem o item: ".concat(objeto, " no seu invetario para largar"), rinfo.port);
+                            server.send("\nVoce nao tem o item: ".concat(objeto, " no seu invetario para largar"), rinfo.port);
                         }
                     }
                     else {
-                        server.send("Voce nao tem o item: ".concat(objeto, " no seu invetario para largar"), rinfo.port);
+                        server.send("\nVoce nao tem o item: ".concat(objeto, " no seu invetario para largar"), rinfo.port);
                     }
                 }
             });
             break;
         case "inventario":
-            var itemsInventario_1 = "Itens no seu inventario:";
+            var itemsInventario_1 = "\nItens no seu inventario:";
             clients.forEach(function (x) {
                 if (x.port == rinfo.port && x.address == rinfo.address) {
                     if (x.inventario) {
@@ -345,18 +360,89 @@ server.on('message', function (msg, rinfo) {
                             itemsInventario_1 = "".concat(itemsInventario_1, " ").concat(item.name, " |");
                         });
                         if (!x.inventario.length) {
-                            itemsInventario_1 = "Voce nao tem nenhum item no inventario!";
+                            itemsInventario_1 = "\nVoce nao tem nenhum item no inventario!";
                         }
                     }
                     else {
-                        itemsInventario_1 = "Voce nao tem nenhum item no inventario!";
+                        itemsInventario_1 = "\nVoce nao tem nenhum item no inventario!";
                     }
                 }
             });
             server.send(itemsInventario_1, rinfo.port);
             break;
         case "usar":
-            server.send("Voce usou o objeto");
+            var params = msg.toString().split(":")[1].trim();
+            var param1 = params.split(" ")[0];
+            var param2 = params.split(" ")[1];
+            if (param1 && param2) {
+                clients.forEach(function (x) {
+                    if (x.port == rinfo.port && x.address == rinfo.address) {
+                        if (x.inventario) {
+                            var item = x.inventario.filter(function (inv) { return inv.name == param1; })[0];
+                            if (item) {
+                                if (item.isKey) {
+                                    var salas = [];
+                                    rooms[x.actualRoomIndex].adjacentRooms.forEach(function (sala) {
+                                        salas.push(sala.name);
+                                    });
+                                    if (salas.includes(param2)) {
+                                        rooms.forEach(function (sala) {
+                                            if (sala.name == param2) {
+                                                if (sala.isOpen) {
+                                                    server.send("\nA: ".concat(param2, " ja esta aberta!"), rinfo.port);
+                                                }
+                                                else {
+                                                    sala.setOpen();
+                                                    server.send("\nVoce abriu a porta da: ".concat(param2), rinfo.port);
+                                                }
+                                            }
+                                        });
+                                    }
+                                    else {
+                                        server.send("\nVoce nao pode usar o item: ".concat(param1, " no objeto: ").concat(param2), rinfo.port);
+                                    }
+                                }
+                                if (item.isSword) {
+                                    if (param2 == "Dragao") {
+                                        rooms[x.actualRoomIndex].objects.forEach(function (xs) {
+                                            if (xs.name == param2) {
+                                                if (xs.life == 30) {
+                                                    xs.life = xs.life - 10;
+                                                    server.send("\nVoce golpeia o poderoso Dragao usando a sua ".concat(param1, ", mas nao eh o suficiente para mata-lo"), rinfo.port);
+                                                }
+                                                else if (xs.life == 20) {
+                                                    xs.life = xs.life - 10;
+                                                    server.send("\nVoce acerta o Dragao em cheio e ele cai no chao, apenas mais um golpe e sua missao estara finalizada", rinfo.port);
+                                                }
+                                                else if (xs.life == 10) {
+                                                    xs.life = xs.life - 10;
+                                                    server.send("\nVoce pega sua ".concat(param1, " chega perto do Dragao e da o ultimo golpe nele, ele solta um enorme rugido e morre!"), rinfo.port);
+                                                    server.send("\nParabens voce desbravou este mundo e concluiu seu objetivo de matar o dragao!", rinfo.port);
+                                                }
+                                                else if (xs.life == 0) {
+                                                    server.send("\nO Dragao ja esta morto!", rinfo.port);
+                                                }
+                                            }
+                                        });
+                                    }
+                                    else {
+                                        server.send("\nVoce nao pode usar o item: ".concat(param1, " no objeto: ").concat(param2), rinfo.port);
+                                    }
+                                }
+                            }
+                            else {
+                                server.send("\nVoce nao tem o item: ".concat(param1, " no seu inventario, para ver os itens do seu inventario digite inventario:"), rinfo.port);
+                            }
+                        }
+                        else {
+                            server.send("\nVoce nao tem o item: ".concat(param1, " no seu inventario, para ver os itens do seu inventario digite inventario:"), rinfo.port);
+                        }
+                    }
+                });
+            }
+            else {
+                server.send("\nComando invalido, para ver a forma correta de uso utilize o comando ajuda:", rinfo.port);
+            }
             break;
         case "falar":
             var message = msg.toString().split(":")[1];
@@ -377,20 +463,20 @@ server.on('message', function (msg, rinfo) {
             server.send("Voce usou o cochichou");
             break;
         case "ajuda":
-            server.send("\nLista de comandos: \n 'examinar:' serve para examinar uma determiada sala", rinfo.port);
+            server.send(ajuda(), rinfo.port);
             break;
         case "setarnome":
             var client_1 = clients.filter(function (x) { return x.address == rinfo.address && x.port == rinfo.port; })[0];
             var index = clients.indexOf(client_1);
             clients[index].name = msg.toString().split(":")[1].trim();
-            server.send("Nome setado para: ".concat(clients[index].name), rinfo.port);
+            server.send("\nNome setado para: ".concat(clients[index].name), rinfo.port);
             break;
         case "nome":
             client_1 = clients.filter(function (x) { return x.address == rinfo.address && x.port == rinfo.port; })[0];
-            server.send("Seu nome eh: ".concat(client_1.name), rinfo.port);
+            server.send("\nSeu nome eh: ".concat(client_1.name), rinfo.port);
             break;
         default:
-            server.send("Comando invalido digite 'ajuda:' pra ver a lista de comandos", rinfo.port);
+            server.send("\nComando invalido digite 'ajuda:' pra ver a lista de comandos", rinfo.port);
     }
 });
 server.on('listening', function () {
