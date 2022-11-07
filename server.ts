@@ -257,7 +257,9 @@ const ajuda = () => {
   ${Couleurs("inventario", [255, 255, 0])} -- Exibe o seu inventario\n
   ${Couleurs("usar: [objeto] {alvo}", [255, 255, 0])} -- Usa um objeto. Alguns objetos podem ser usados em alvos específicos\n
   ${Couleurs("falar: [texto]", [255, 255, 0])} -- Envia uma mensagem de texto para todos os jogadores presentes na sala atual\n
-  ${Couleurs("cochichar: [texto] [jogador]", [255, 255, 0])} -- Envia uma mensagem de texto para um jogador específico na sala atual\n
+  ${Couleurs(`cochichar: "[texto]" [jogador]`, [255, 255, 0])} -- Envia uma mensagem de texto para um jogador específico na sala atual\n
+  ${Couleurs(`setarnome: [nome]`, [255, 255, 0])} -- Seta um nome para voce uilizar\n
+  ${Couleurs(`nome:`, [255, 255, 0])} -- Exibe seu nome atual\n
   ${Couleurs("ajuda", [255, 255, 0])} -- Lista todos os comandos possíveis do jogo\n
   `
 }
