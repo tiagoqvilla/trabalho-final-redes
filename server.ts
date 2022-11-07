@@ -250,7 +250,7 @@ const printMap = (rooms: room[], address: string, port: number) => {
 const ajuda = () => {
   return `${Couleurs("Lista de comandos disponiveis:", "#2980b9")} \n
   ${Couleurs("mapa", [255, 255, 0])} -- Exibe o mapa da localização atual do jogador\n
-  ${Couleurs("examinar", [255, 255, 0])} -- Examina a sala atual\n
+  ${Couleurs("examinar: [objeto/sala]", [255, 255, 0])} -- Examina o objeto, sala atual ou verifica se a porta da sala adjacente esta aberta ou fechada.\n
   ${Couleurs("mover: [N/S/L/O]", [255, 255, 0])} -- Move o jogador para uma sala\n
   ${Couleurs("pegar: [objeto]", [255, 255, 0])} -- Coleta um objeto contido na sala atual\n
   ${Couleurs("largar: [objeto]", [255, 255, 0])} -- Larga um objeto contido no inventário do jogador\n
@@ -285,7 +285,7 @@ server.on('message', (msg: string, rinfo: client) => {
   var command = msg.toString().split(":")[0].toLowerCase();
   switch (command) {
     case "welcome":
-      server.send("Bem vindo ao servidor!\n\n", rinfo.port);
+      server.send(`Bem vindo ao servidor!\n\n, O seu objetivo eh chegar ate o poderoso dragao, para isso voce precisara encontrar meios para acessar as outras salas e tambem encontrar uma forma de matar o dragao. Boa sorte!`, rinfo.port);
       clients.forEach(x => {
         if (x.port == rinfo.port && x.address == rinfo.address) {
           rooms[0].users.push(x);
